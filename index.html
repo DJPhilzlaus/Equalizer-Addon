@@ -1,0 +1,1225 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Equalizer</title>
+<meta name="theme-color" content="#0e1013">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Equalizer">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxNjFhMWYiLz48ZyBmaWxsPSIjZjJhMzNhIj48cmVjdCB4PSIxMCIgeT0iMzAiIHdpZHRoPSI4IiBoZWlnaHQ9IjI0IiByeD0iMiIvPjxyZWN0IHg9IjIyIiB5PSIxMiIgd2lkdGg9IjgiIGhlaWdodD0iNDIiIHJ4PSIyIi8+PHJlY3QgeD0iMzQiIHk9IjIyIiB3aWR0aD0iOCIgaGVpZ2h0PSIzMiIgcng9IjIiLz48L2c+PHJlY3QgeD0iNDYiIHk9IjM2IiB3aWR0aD0iOCIgaGVpZ2h0PSIxOCIgcng9IjIiIGZpbGw9IiMzZmJmN2YiLz48cmVjdCB4PSI0NiIgeT0iMzAiIHdpZHRoPSI4IiBoZWlnaHQ9IjMiIHJ4PSIxLjUiIGZpbGw9IiNmZjRkNGQiLz48L3N2Zz4K">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root {
+  --bg: #0e1013; --bg2: #161a1f; --card: #1b2026; --line: #2a3139;
+  --grid: #262c33; --text: #e6e9ed; --muted: #8a949f;
+  --ok: #3fbf7f; --warn: #e8b33a; --hot: #ff4d4d; --thin: #4c9bff;
+  --accent: #f2a33a; --zone: rgba(0, 0, 0, 0.35); --snap: #b28cff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex; flex-direction: column; min-height: 100%;
+}
+button, select, input { font: inherit; color: inherit; }
+button, select {
+  background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; cursor: pointer;
+}
+button:hover:not(:disabled), select:hover:not(:disabled) { border-color: var(--muted); }
+button:disabled, select:disabled { opacity: 0.45; cursor: default; }
+button.ok { border-color: var(--ok); color: var(--ok); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.primary { background: var(--accent); color: #1a1206; border-color: var(--accent); font-weight: 600; min-width: 72px; }
+button.primary.on { background: var(--hot); border-color: var(--hot); color: #fff; }
+button.on { border-color: var(--accent); color: var(--accent); }
+
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg2);
+  /* iPhone: Statusleiste/Notch (Home-Bildschirm-App im Vollbild) */
+  padding-top: max(10px, env(safe-area-inset-top, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo { width: 22px; height: 22px; fill: var(--accent); flex: none; }
+h1 { font-size: 18px; margin: 0; letter-spacing: 0.02em; }
+.sub { color: var(--muted); }
+.controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.controls select { max-width: min(320px, 60vw); text-overflow: ellipsis; }
+.chk { display: flex; align-items: center; gap: 5px; color: var(--muted); white-space: nowrap; }
+
+main { flex: 1; display: flex; gap: 12px; padding: 12px 16px 16px; min-height: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+.scope { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.chart-wrap { position: relative; flex: 1; min-height: 280px; background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.overlay {
+  position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); max-width: 80%;
+  background: rgba(14, 16, 19, 0.85); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 16px; color: var(--muted); text-align: center; pointer-events: none;
+}
+.overlay[hidden] { display: none; }
+.file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.file-row[hidden] { display: none; }
+.file-row audio { height: 32px; flex: 1; min-width: 200px; }
+.muted { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40ch; }
+
+.side { width: 320px; flex: none; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+.card select { width: 100%; }
+.row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.right { margin-left: auto; }
+.mono { font-variant-numeric: tabular-nums; }
+
+.meter { position: relative; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden;
+  background-image: linear-gradient(90deg, transparent 0 80%, rgba(232, 179, 58, .15) 80% 95%, rgba(255, 77, 77, .2) 95%); }
+.meter .rms { position: absolute; inset: 0 auto 0 0; background: var(--ok); width: 0; }
+.meter .peak { position: absolute; inset: 0 auto 0 0; width: 0; border-right: 2px solid var(--text); }
+.led { width: 12px; height: 12px; border-radius: 50%; background: #3a1a1a; flex: none; box-shadow: inset 0 0 0 1px #000; }
+.led.on { background: var(--hot); box-shadow: 0 0 10px var(--hot); }
+
+.desc { color: var(--muted); font-size: 12.5px; margin: 8px 0; min-height: 5.4em; }  /* feste Höhe: längste Beschreibung, nichts darunter springt */
+.score { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; }
+.score span { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.score small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.score[data-level="good"] span { color: var(--ok); }
+.score[data-level="mid"] span { color: var(--warn); }
+.score[data-level="bad"] span { color: var(--hot); }
+
+.slider { display: block; color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+.slider span { float: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.slider input { width: 100%; accent-color: var(--accent); }
+.inline { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+.inline select { flex: 1; width: auto; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.btns button { font-size: 12.5px; padding: 5px 8px; }
+.btns button[hidden] { display: none; }
+
+.findings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px;
+  height: 152px; overflow-y: auto; }  /* feste Höhe: die Karten darunter bleiben stehen */
+.findings li { padding: 4px 8px 4px 10px; border-left: 3px solid var(--line); background: var(--bg2); border-radius: 0 4px 4px 0; overflow-wrap: anywhere; }
+.findings li.clip, .findings li.hot { border-color: var(--hot); }
+.findings li.res { border-color: var(--warn); }
+.findings li.thin { border-color: var(--thin); }
+.findings li.none { color: var(--muted); }
+
+/* Werkzeugleiste unter dem Diagramm */
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.tgroup { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px; min-width: 0; }
+.tgroup:first-child { flex: 1 1 auto; }
+.tlabel { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; margin-right: 2px; }
+.tgroup button, .tgroup select { font-size: 12.5px; padding: 4px 8px; }
+.tgroup .inline { margin: 0; }
+.tgroup .inline select { flex: none; }
+.thr input { width: 90px; accent-color: var(--accent); }
+.thr span { color: var(--text); min-width: 4.2em; }
+#snap { min-width: 98px; }
+#resetAvg { min-width: 116px; }
+.rec-btn { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; min-width: 112px; justify-content: center; }
+.rec-btn .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--hot); flex: none; }
+.rec-btn .dot.sq { border-radius: 2px; background: var(--text); }
+.rec-btn.on { background: var(--hot); border-color: var(--hot); color: #fff; }
+
+/* Aufnahme-Anzeige über dem Diagramm */
+.rec-overlay { position: absolute; top: 34px; left: 50%; transform: translateX(-50%); min-width: 220px; max-width: 90%;
+  background: rgba(14, 16, 19, 0.88); border: 1px solid var(--line); border-radius: 10px; padding: 10px 18px 12px;
+  text-align: center; pointer-events: none; }
+.rec-overlay[hidden] { display: none; }
+.rec-big { font-size: 44px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.rec-overlay.lead .rec-big { color: var(--accent); }
+.rec-overlay.rec .rec-big { color: var(--hot); }
+.rec-overlay.wait .rec-big { color: var(--muted); }
+.rec-sub { color: var(--muted); font-size: 12.5px; min-height: 1.4em; }
+.rec-bar { height: 4px; background: var(--line); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.rec-bar i { display: block; height: 100%; width: 0; background: var(--hot); }
+
+/* Bewertung: Live / Aufnahme */
+.h-seg { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; text-transform: none; letter-spacing: 0; }
+.seg button { border: 0; border-radius: 0; padding: 2px 8px; font-size: 12px; font-weight: 500; background: transparent; max-width: 110px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--accent); color: #1a1206; }
+
+/* Aufnahmen-Liste */
+.takes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; height: 196px; overflow-y: auto; }
+.takes .empty { color: var(--muted); font-size: 12.5px; }
+.take { background: var(--bg2); border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+.take.sel { border-left-color: var(--snap); }
+.t-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.t-head b { white-space: nowrap; }
+.t-meta { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+.t-clip { color: var(--hot); }
+.badge { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; padding: 0 6px; border-radius: 4px; background: var(--card); flex: none; }
+.badge.good { color: var(--ok); } .badge.mid { color: var(--warn); } .badge.bad { color: var(--hot); }
+.t-acts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.t-acts button { font-size: 12px; padding: 2px 7px; white-space: nowrap; }
+.t-acts button.on { border-color: var(--snap); color: var(--snap); }
+.t-acts [data-act="dl"] { padding: 2px 8px; }
+.t-del { font-size: 12px; padding: 0 6px; background: transparent; border-color: transparent; color: var(--muted); flex: none; }
+.t-del:hover { color: var(--hot); }
+
+/* Touch: Erklärung per langem Drücken statt Mouseover */
+button, label, select, .led, .meter, .card h2 { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+button, select, input, label { touch-action: manipulation; }
+.tip { position: fixed; z-index: 20; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: max(16px, env(safe-area-inset-bottom, 0px)); max-width: 480px; margin: 0 auto;
+  background: var(--card); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); font-size: 14px; }
+.tip[hidden] { display: none; }
+
+@media (max-width: 900px) {
+  main { flex-direction: column; }
+  .chart-wrap { flex: none; height: 55vh; }
+  .side { width: auto; overflow: visible; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+}
+@media (max-width: 480px) {
+  .top { padding-bottom: 8px; }
+  main { padding-top: 8px; }
+  .sub { display: none; }
+  .controls { width: 100%; }
+  .controls select { flex: 1; max-width: none; min-width: 0; }
+}
+.ver { font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 4px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="10" width="3" height="12"/><rect x="7" y="4" width="3" height="18"/><rect x="12" y="8" width="3" height="14"/><rect x="17" y="13" width="3" height="9"/></svg>
+    <h1>Equalizer</h1>
+    <span class="sub">Gitarren-Analyse <span class="ver">v0.3</span></span>
+  </div>
+  <div class="controls">
+    <select id="source" aria-label="Quelle" title="Woher das Signal kommt: ein Mikrofon (auch ein per App verbundenes iPhone), das eingebaute Demo-Riff oder eine Audiodatei"></select>
+    <button id="startBtn" class="primary" title="Analyse starten bzw. stoppen">Start</button>
+    <label class="chk" title="Signal über die Lautsprecher mithören. Beim Mikrofon aus lassen – sonst pfeift es (Rückkopplung)."><input type="checkbox" id="monitor"> Mithören</label>
+  </div>
+</header>
+
+<main>
+  <section class="scope">
+    <div class="chart-wrap">
+      <canvas id="chart" aria-label="Frequenzspektrum"></canvas>
+      <div id="overlay" class="overlay"></div>
+      <div id="recOverlay" class="rec-overlay" hidden>
+        <div id="recBig" class="rec-big"></div>
+        <div id="recSub" class="rec-sub"></div>
+        <div class="rec-bar"><i id="recProg"></i></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="tgroup" role="group" aria-label="Anzeige">
+        <span class="tlabel">Anzeige</span>
+        <label class="inline" title="Wie fein das Spektrum aufgeteilt wird: 1/6 Oktave zeigt einzelne Resonanzen genauer, 1/3 Oktave ist ruhiger (klassischer Terz-Equalizer)">Auflösung
+          <select id="res"><option value="6" selected>1/6 Okt.</option><option value="3">1/3 Okt.</option></select></label>
+        <label class="inline thr" title="Pegel, ab dem ein Balken rot wird und unter „Bewertung“ als „Über Warnschwelle“ erscheint (gestrichelte rote Linie im Diagramm)">Warnschwelle
+          <input type="range" id="thr" min="-70" max="-10" step="1" value="-30"><span id="thrVal" class="mono">-30 dB</span></label>
+        <button id="freeze" title="Hält die Anzeige an, um in Ruhe hinzusehen. Analyse und eine laufende Aufnahme gehen im Hintergrund weiter.">Einfrieren</button>
+        <button id="snap" title="Merkt sich die aktuelle weiße Durchschnittskurve als lila gestrichelte Vergleichslinie – z. B. vor einer Änderung an Amp oder Pedal, um danach vorher/nachher zu vergleichen">Kurve merken</button>
+        <button id="clearSnap" disabled title="Blendet die lila Vergleichslinie (gemerkte Kurve oder Aufnahme) wieder aus">Vergleich aus</button>
+        <button id="resetAvg" title="Startet die weiße Durchschnittskurve (Mittel über ca. 3 s) und den Clip-Zähler neu – z. B. nach einer Sound-Änderung">Mittelung neu</button>
+      </div>
+      <div class="tgroup" role="group" aria-label="Aufnahme">
+        <span class="tlabel">Aufnahme</span>
+        <label class="inline" title="Wartezeit nach dem Klick, damit du die Hände an die Gitarre bekommst. „Sobald ich spiele“ startet automatisch, wenn ein Signal kommt.">Vorlauf
+          <select id="recLead">
+            <option value="0">sofort</option><option value="3">3 s</option><option value="5" selected>5 s</option>
+            <option value="10">10 s</option><option value="15">15 s</option><option value="30">30 s</option>
+            <option value="auto">sobald ich spiele</option>
+          </select></label>
+        <label class="inline" title="Wie lange aufgenommen wird; danach stoppt die Aufnahme von selbst">Dauer
+          <select id="recDur">
+            <option value="5">5 s</option><option value="10">10 s</option><option value="15">15 s</option><option value="20" selected>20 s</option>
+            <option value="30">30 s</option><option value="45">45 s</option><option value="60">60 s</option><option value="90">90 s</option><option value="120">2 min</option>
+          </select></label>
+        <label class="chk" title="Signaltöne über die Lautsprecher: Countdown in den letzten 3 Sekunden, Startton, Doppelton am Ende"><input type="checkbox" id="recBeep" checked> Töne</label>
+        <button id="recBtn" class="rec-btn" title="Aufnahme mit Vorlauf und Dauer starten bzw. abbrechen. Freihändig: Taste R (z. B. per Bluetooth-Fußpedal), Esc bricht ab."><span class="dot"></span>Aufnahme</button>
+      </div>
+    </div>
+
+    <div id="fileRow" class="file-row" hidden>
+      <button id="pickFile" title="Audiodatei (z. B. MP3 eines Songs) auswählen">Datei wählen …</button>
+      <span id="fileName" class="muted"></span>
+      <audio id="player" controls></audio>
+      <input type="file" id="fileInput" accept="audio/*" hidden>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div class="card">
+      <h2>Eingang</h2>
+      <div class="meter" title="Eingangspegel: grün = Durchschnitt (RMS), weißer Strich = Spitze. Rechts im roten Bereich droht Übersteuerung."><div id="meterRms" class="rms"></div><div id="meterPeak" class="peak"></div></div>
+      <div class="row">
+        <span id="clipLed" class="led" title="Leuchtet rot, wenn das Eingangssignal digital übersteuert (clippt). Dann den Gain am Interface/Mikrofon senken."></span>
+        <span id="clipInfo">kein Clipping</span>
+        <span id="peakVal" class="right mono" title="Höchster Momentanpegel in dBFS (0 = Maximum)">–</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Referenz</h2>
+      <select id="refSel" aria-label="Referenzkurve" title="Klangvorbild, mit dem verglichen wird (orange Kurve). Genre- und Gitarristen-Kurven sind Näherungen; eigene Referenzen stammen aus deinen Messungen."></select>
+      <p id="refDesc" class="desc"></p>
+      <label class="slider" title="Wie weit die Kurve von der Referenz abweichen darf, bevor ein Bereich als „zu laut“ oder „zu schwach“ gilt (orange Fläche)">Toleranz <span id="tolVal">± 6 dB</span>
+        <input type="range" id="tol" min="2" max="12" step="1" value="6"></label>
+      <div class="btns">
+        <button id="saveRef" title="Aktuelle weiße Durchschnittskurve als eigene Referenz speichern – z. B. während ein Song mit Wunschsound läuft">Als Referenz speichern</button>
+        <button id="delRef" disabled title="Gewählte eigene Referenz löschen (nur bei eigenen Referenzen möglich)">Löschen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="h-seg">Bewertung
+        <span class="seg" role="group" aria-label="Bewertung von">
+          <button id="viewLive" class="on" title="Bewertet das aktuelle Signal (weiße Kurve)">Live</button>
+          <button id="viewTake" disabled title="Bewertet die als Vergleich gewählte Aufnahme">Aufnahme</button>
+        </span>
+      </h2>
+      <div id="scoreBox" class="score" title="100 = Kurve deckt sich mit der Referenz; je größer die Abweichungen, desto niedriger"><span id="score">–</span><small id="scoreSub">Übereinstimmung</small></div>
+      <ul id="findings" class="findings"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Aufnahmen</h2>
+      <ul id="takes" class="takes"></ul>
+      <audio id="takePlayer" hidden></audio>
+    </div>
+  </aside>
+</main>
+<div id="tip" class="tip" role="status" hidden></div>
+
+<script>
+// Referenzkurven: relativer Pegel (dB) des Gitarrensignals an festen Stützfrequenzen, logarithmisch interpoliert.
+// Es gibt keine veröffentlichten, gemessenen „Idealkurven“ für Genres oder Gitarristen. Diese Kurven sind
+// Näherungen aus bekanntem Equipment (Gitarre, Pedale, Amp) und gängiger Mix-Praxis – Orientierung, kein Messwert.
+// Verlässlicher sind eigene Referenzen: einen Song als Datei laden und „Als Referenz speichern“.
+const REF_FREQS = [80, 120, 200, 400, 800, 1500, 2500, 4000, 6000, 10000];
+
+const REFERENCES = [
+  { id: 'g-classic', group: 'Genre', name: 'Classic Rock',
+    desc: 'Crunch über Marshall-artigen Amp: kräftige Mitten um 800 Hz–1,5 kHz, Bässe schlank, Höhen ab 5 kHz abfallend.',
+    db: [-14, -6, -2, 0, 2, 1, 0, -3, -10, -22] },
+  { id: 'g-metal', group: 'Genre', name: 'Modern Metal',
+    desc: 'High-Gain, tight: Hochpass um 100 Hz, leichte Senke bei 400 Hz, Präsenz 2–4 kHz. Bass übernimmt das Fundament.',
+    db: [-16, -5, -1, -3, -1, 1, 2, 0, -6, -18] },
+  { id: 'g-blues', group: 'Genre', name: 'Blues',
+    desc: 'Tube-Screamer-Mittenbuckel um 700–800 Hz, warm, Höhen früh weich abgerundet.',
+    db: [-14, -6, -2, 1, 3, 0, -2, -5, -12, -24] },
+  { id: 'g-funk', group: 'Genre', name: 'Funk / Clean',
+    desc: 'Clean, perkussiv: wenig Bass, Biss bei 2–3 kHz, damit Single-Notes und Chicken-Picking durchsetzen.',
+    db: [-20, -10, -4, -2, 0, 1, 2, 0, -5, -14] },
+  { id: 'g-jazz', group: 'Genre', name: 'Jazz',
+    desc: 'Halsabnehmer, Ton-Poti zurück: dunkel und rund, Schwerpunkt 200–500 Hz, Höhen stark abgesenkt.',
+    db: [-10, -3, 0, 0, -2, -6, -10, -16, -24, -34] },
+  { id: 'g-country', group: 'Genre', name: 'Country',
+    desc: 'Tele-Twang: schlanke Bässe, Glanz und Attack bei 2,5–4 kHz.',
+    db: [-18, -9, -4, -2, -1, 1, 3, 1, -4, -14] },
+  { id: 'g-indie', group: 'Genre', name: 'Indie / Alternative',
+    desc: 'Jangle, leicht angezerrt: ausgewogene Mitten, offene obere Mitten, wenig Bass.',
+    db: [-16, -8, -3, -1, 0, 1, 1, 0, -4, -14] },
+  { id: 'g-grunge', group: 'Genre', name: 'Grunge / Fuzz',
+    desc: 'Fuzz/Big Muff: breites, dichtes Spektrum, leicht abgesenkte Mitten, rauer Präsenzbereich.',
+    db: [-12, -4, -1, -2, -1, 0, 0, -2, -8, -18] },
+
+  { id: 'a-hendrix', group: 'Gitarrist (Näherung)', name: 'Jimi Hendrix',
+    desc: 'Strat + Fuzz Face + Marshall Plexi: offen-fuzzig, präsente obere Mitten.',
+    db: [-12, -5, -2, 0, 1, 2, 1, -1, -6, -16] },
+  { id: 'a-gilmour', group: 'Gitarrist (Näherung)', name: 'David Gilmour',
+    desc: 'Strat, Big Muff, Hiwatt: glatt und breit, kaum Mittenbuckel, offene Höhen, viel Sustain.',
+    db: [-14, -6, -2, -1, 0, 1, 1, 0, -4, -12] },
+  { id: 'a-srv', group: 'Gitarrist (Näherung)', name: 'Stevie Ray Vaughan',
+    desc: 'Strat mit dicken Saiten + Tube Screamer + Fender: kräftiger Mittenbuckel 700 Hz–1 kHz, satte Bässe.',
+    db: [-10, -4, -1, 1, 3, 1, -1, -4, -10, -20] },
+  { id: 'a-hetfield', group: 'Gitarrist (Näherung)', name: 'James Hetfield (80er)',
+    desc: 'Mesa Mark IIC+ mit V-förmigem Grafik-EQ: starke Bässe und Präsenz, Mitten um 500–800 Hz deutlich abgesenkt.',
+    db: [-12, -3, 0, -4, -6, -2, 1, 0, -6, -16] },
+  { id: 'a-evh', group: 'Gitarrist (Näherung)', name: 'Eddie Van Halen',
+    desc: '„Brown Sound“: Frankenstrat + Marshall Plexi, warme, kräftige Mitten mit Schwerpunkt 1–2 kHz.',
+    db: [-14, -6, -2, 0, 2, 3, 1, -2, -8, -18] },
+  { id: 'a-slash', group: 'Gitarrist (Näherung)', name: 'Slash',
+    desc: 'Les Paul + modifizierter Marshall: warm, mittig, rund, Höhen gezähmt.',
+    db: [-12, -5, -1, 1, 2, 1, 0, -3, -9, -20] },
+  { id: 'a-angus', group: 'Gitarrist (Näherung)', name: 'Angus Young',
+    desc: 'SG + Marshall mit wenig Gain: trocken, mittig-bissig um 1–1,5 kHz, schlanke Bässe.',
+    db: [-16, -8, -3, 0, 2, 3, 1, -2, -8, -18] },
+  { id: 'a-edge', group: 'Gitarrist (Näherung)', name: 'The Edge',
+    desc: 'Vox AC30 + Delays: glockig-hell, Fokus 2–4 kHz, schlanke Bässe.',
+    db: [-18, -10, -4, -2, 0, 1, 3, 2, -3, -12] },
+  { id: 'a-knopfler', group: 'Gitarrist (Näherung)', name: 'Mark Knopfler',
+    desc: 'Strat in Zwischenposition, Fingerpicking: weich-mittig, sanfte Höhen.',
+    db: [-14, -6, -2, 0, 1, 0, -1, -3, -8, -18] },
+  { id: 'a-mayer', group: 'Gitarrist (Näherung)', name: 'John Mayer',
+    desc: 'Strat + Dumble-artiger Clean/Low-Gain: warm, voll und rund.',
+    db: [-12, -5, -1, 0, 1, 0, 0, -2, -6, -16] },
+];
+
+// Pegel einer Referenz bei Frequenz f (dB, relativ). Außerhalb der Stützstellen weiter abfallend.
+function refLevelAt(ref, f) {
+  const fr = ref.freqs || REF_FREQS, db = ref.db, n = fr.length;
+  if (f <= fr[0]) return db[0] - 18 * Math.log2(fr[0] / f);
+  if (f >= fr[n - 1]) return db[n - 1] - 12 * Math.log2(f / fr[n - 1]);
+  let i = 1;
+  while (fr[i] < f) i++;
+  const t = Math.log(f / fr[i - 1]) / Math.log(fr[i] / fr[i - 1]);
+  return db[i - 1] + t * (db[i] - db[i - 1]);
+}
+</script>
+<script>
+// Equalizer – Gitarren-Spektrumanalyse im Browser (Web Audio API, keine Abhängigkeiten).
+'use strict';
+
+const F_MIN = 40, F_MAX = 16000;           // dargestellter Bereich
+const GTR_LO = 80, GTR_HI = 6000;          // Gitarre im Bandkontext (Hochpass/Tiefpass im Mix)
+const SCORE_LO = 100, SCORE_HI = 6000;     // Bereich für Abgleich mit der Referenz
+const DB_MIN = -100, DB_MAX = -10;         // Anzeige-Skala (dBFS je Band)
+const NOISE_FLOOR = -85;                   // darunter gilt ein Band als „kein Signal“
+const AVG_TAU = 3;                         // Mittelungszeit der Langzeitkurve (s)
+const AUTO_START_DB = -45;                 // „Sobald ich spiele“: Eingangspegel (RMS, dBFS), ab dem die Aufnahme startet
+const MAX_TAKES = 10;
+const ZONES = [
+  { lo: 80, hi: 250, name: 'Wummern' },
+  { lo: 250, hi: 500, name: 'Mulm' },
+  { lo: 500, hi: 1500, name: 'Körper' },
+  { lo: 1500, hi: 5000, name: 'Biss / Präsenz' },
+  { lo: 5000, hi: 12000, name: 'Fizz' },
+];
+
+const $ = (id) => document.getElementById(id);
+const TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+const state = {
+  ctx: null, analyser: null, source: null, stream: null, demo: null, monitorGain: null, recDest: null,
+  running: false, frozen: false, fraction: 6, bands: [],
+  freq: null, time: null, clipUntil: 0, clipCount: 0, lastT: 0,
+  ref: null, tol: 6, threshold: -30, custom: [],
+  compare: null,            // lila Vergleichskurve: { id, name, bands:[{fc,fl,fh,avg}] }
+  takes: [], takeNo: 0,     // Aufnahmen, neueste zuerst
+  rec: null,                // laufende Aufnahme (Vorlauf / Warten / Aufnahme)
+  view: 'live',             // Bewertung: 'live' oder 'take' (die als Vergleich gewählte Aufnahme)
+  live: { score: null, findings: [], devs: [] },
+};
+
+/* ---------- Bänder ---------- */
+function buildBands() {
+  const n = state.fraction, bands = [];
+  const binHz = state.ctx ? state.ctx.sampleRate / state.analyser.fftSize : 48000 / 16384;
+  const nBins = state.ctx ? state.analyser.frequencyBinCount : 8192;
+  for (let k = Math.ceil(n * Math.log2(F_MIN / 1000)); ; k++) {
+    const fc = 1000 * Math.pow(2, k / n);
+    if (fc > F_MAX) break;
+    const fl = fc * Math.pow(2, -1 / (2 * n)), fh = fc * Math.pow(2, 1 / (2 * n));
+    let b0 = Math.ceil(fl / binHz), b1 = Math.min(nBins - 1, Math.floor(fh / binHz));
+    if (b1 < b0) b0 = b1 = Math.round(fc / binHz);
+    bands.push({ fc, fl, fh, b0, b1, p: 0, cur: DB_MIN, peak: DB_MIN, peakT: 0, avgP: 0, avg: DB_MIN, over: 0, dev: null });
+  }
+  state.bands = bands;
+}
+
+function fmtHz(f) {
+  return f >= 1000 ? (f / 1000).toFixed(f >= 10000 ? 0 : 1).replace('.', ',').replace(',0', '') + ' kHz' : Math.round(f) + ' Hz';
+}
+const fmtSec = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+const fmtTime = (d) => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const toDb = (p) => (p > 0 ? Math.max(DB_MIN, 10 * Math.log10(p)) : DB_MIN);
+
+/* ---------- Audio ---------- */
+async function ensureContext() {
+  if (!state.ctx) {
+    state.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const a = state.ctx.createAnalyser();
+    a.fftSize = 16384;
+    a.smoothingTimeConstant = 0;
+    state.analyser = a;
+    state.monitorGain = state.ctx.createGain();
+    state.monitorGain.connect(state.ctx.destination);
+    if (state.ctx.createMediaStreamDestination) state.recDest = state.ctx.createMediaStreamDestination();
+    state.freq = new Float32Array(a.frequencyBinCount);
+    state.time = new Float32Array(a.fftSize);
+    buildBands();
+  }
+  if (state.ctx.state === 'suspended') await state.ctx.resume();
+}
+
+function stopSource() {
+  if (state.source) { try { state.source.disconnect(); } catch (e) {} }
+  if (state.stream) state.stream.getTracks().forEach((t) => t.stop());
+  if (state.demo) state.demo.stop();
+  state.source = state.stream = state.demo = null;
+  $('player').pause();
+}
+
+async function start() {
+  const sel = $('source').value;
+  try {
+    await ensureContext();
+    stopSource();
+    if (sel === 'demo') {
+      state.demo = makeDemo(state.ctx);
+      state.source = state.demo.out;
+    } else if (sel === 'file') {
+      const p = $('player');
+      if (!p.src) { $('fileInput').click(); return; }
+      if (!state.fileNode) state.fileNode = state.ctx.createMediaElementSource(p);
+      state.source = state.fileNode;
+      await p.play();
+    } else {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+        throw new Error('Mikrofonzugriff braucht https:// oder localhost.');
+      state.stream = await navigator.mediaDevices.getUserMedia({ audio: {
+        deviceId: sel && sel !== 'mic' ? { exact: sel } : undefined,
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+      state.source = state.ctx.createMediaStreamSource(state.stream);
+      await listDevices(state.stream.getAudioTracks()[0].getSettings().deviceId);
+    }
+    state.source.connect(state.analyser);
+    state.source.connect(state.monitorGain);
+    if (state.recDest) state.source.connect(state.recDest);
+    applyMonitor();
+    resetAverage();
+    state.running = true;
+    keepAwake(true);
+    setOverlay('');
+    $('startBtn').textContent = 'Stopp';
+    $('startBtn').classList.add('on');
+  } catch (e) {
+    setOverlay((e.name === 'NotAllowedError' ? 'Mikrofon wurde nicht freigegeben. ' : '') + e.message);
+  }
+}
+
+function stop() {
+  cancelRecording();
+  stopSource();
+  state.running = false;
+  keepAwake(false);
+  $('startBtn').textContent = 'Start';
+  $('startBtn').classList.remove('on');
+}
+
+// Display bleibt an, solange analysiert wird (iPhone dimmt sonst mitten in der Aufnahme ab)
+async function keepAwake(on) {
+  try {
+    if (on && !state.wakeLock && navigator.wakeLock) {
+      state.wakeLock = await navigator.wakeLock.request('screen');
+      state.wakeLock.addEventListener('release', () => (state.wakeLock = null));
+    } else if (!on && state.wakeLock) {
+      await state.wakeLock.release(); state.wakeLock = null;
+    }
+  } catch (e) { state.wakeLock = null; }
+}
+
+function applyMonitor() {
+  // Mikrofon nie standardmäßig auf die Lautsprecher (Rückkopplung)
+  if (state.monitorGain) state.monitorGain.gain.value = $('monitor').checked ? 1 : 0;
+}
+
+async function listDevices(activeId) {
+  const sel = $('source'), keep = activeId || sel.value;
+  let devs = [];
+  try { devs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput'); } catch (e) {}
+  const opts = [];
+  const real = devs.filter((d) => d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications');
+  if (real.length && real.some((d) => d.label)) {
+    real.forEach((d, i) => opts.push([d.deviceId, (d.label || 'Mikrofon ' + (i + 1))]));
+  } else {
+    opts.push(['mic', 'Mikrofon (Standard)']);
+  }
+  opts.push(['demo', 'Demo-Signal (Riff)'], ['file', 'Audiodatei …']);
+  sel.innerHTML = '';
+  opts.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); });
+  if ([...sel.options].some((o) => o.value === keep)) sel.value = keep;
+}
+
+/* ---------- Demo-Signal: verzerrtes Power-Chord-Riff ---------- */
+function makeDemo(ctx) {
+  const out = ctx.createGain(); out.gain.value = 0.15;
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 90;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5500; lp.Q.value = 0.9;
+  const cab = ctx.createBiquadFilter(); cab.type = 'peaking'; cab.frequency.value = 1200; cab.gain.value = 4; cab.Q.value = 0.8;
+  const harsh = ctx.createBiquadFilter(); harsh.type = 'peaking'; harsh.frequency.value = 3150; harsh.Q.value = 6; harsh.gain.value = 0;
+  const shaper = ctx.createWaveShaper();
+  const curve = new Float32Array(2048);
+  for (let i = 0; i < curve.length; i++) { const x = i / 1024 - 1; curve[i] = Math.tanh(6 * x) * 0.8; }
+  shaper.curve = curve; shaper.oversample = '4x';
+  const env = ctx.createGain(); env.gain.value = 0;
+  env.connect(shaper); shaper.connect(hp); hp.connect(cab); cab.connect(harsh); harsh.connect(lp); lp.connect(out);
+  const oscs = [0, 1, 2].map(() => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.connect(env); o.start(); return o; });
+  const chords = [82.41, 98.0, 110.0, 73.42];  // E5 G5 A5 D5
+  let step = 0, t0 = ctx.currentTime + 0.05;
+  const beat = 60 / 132 / 2;
+  const timer = setInterval(() => {
+    while (t0 < ctx.currentTime + 0.3) {
+      const root = chords[Math.floor(step / 8) % chords.length];
+      const accent = step % 8 === 0 || step % 8 === 3 || step % 8 === 6;
+      [1, 1.4983, 2].forEach((m, i) => oscs[i].frequency.setValueAtTime(root * m * (1 + (i - 1) * 0.002), t0));
+      env.gain.setValueAtTime(accent ? 0.9 : 0.45, t0);
+      env.gain.exponentialRampToValueAtTime(accent ? 0.25 : 0.08, t0 + beat * 0.95);
+      // alle 4 Takte für 2 Takte eine stechende Resonanz bei 3,15 kHz – zeigt die Warnungen
+      harsh.gain.setValueAtTime(Math.floor(step / 32) % 2 ? 14 : 0, t0);
+      step++; t0 += beat;
+    }
+  }, 50);
+  return { out, stop() { clearInterval(timer); oscs.forEach((o) => o.stop()); out.disconnect(); } };
+}
+
+/* ---------- Analyse (per Timer, läuft auch weiter, wenn das Fenster im Hintergrund ist) ---------- */
+function analyse() {
+  const now = performance.now();
+  const dt = Math.min(0.5, (now - (state.lastT || now)) / 1000); state.lastT = now;
+  if (!state.running) return;
+  const a = state.analyser;
+  a.getFloatFrequencyData(state.freq);
+  a.getFloatTimeDomainData(state.time);
+
+  // Eingangspegel / digitales Clipping
+  let pk = 0, sq = 0, clipEvent = false;
+  for (let i = 0; i < state.time.length; i++) { const v = Math.abs(state.time[i]); if (v > pk) pk = v; sq += v * v; }
+  if (pk >= 0.98) { if (now > state.clipUntil) { state.clipCount++; clipEvent = true; } state.clipUntil = now + 1500; }
+  state.inPeak = pk; state.inRms = Math.sqrt(sq / state.time.length);
+
+  const k = 1 - Math.exp(-dt / AVG_TAU);
+  for (const b of state.bands) {
+    let p = 0;
+    for (let i = b.b0; i <= b.b1; i++) p += Math.pow(10, state.freq[i] / 10);
+    b.p = p;
+    if (state.frozen) continue;
+    const db = toDb(p);
+    // Balken: schneller Anstieg, Abfall 40 dB/s; Spitzenmarke hält 1 s
+    b.cur = db > b.cur ? db : Math.max(db, b.cur - 40 * dt);
+    if (db >= b.peak) { b.peak = db; b.peakT = now; } else if (now - b.peakT > 1000) b.peak = Math.max(db, b.peak - 20 * dt);
+    b.avgP += (p - b.avgP) * k;
+    b.avg = toDb(b.avgP);
+    b.over = db > state.threshold ? now : b.over;
+  }
+  tickRecording(now, dt, clipEvent);
+  if (!state.frozen) {
+    state.live = assess(state.bands);
+    state.bands.forEach((b, i) => (b.dev = state.live.devs[i]));
+  }
+}
+
+function resetAverage() {
+  state.bands.forEach((b) => { b.avgP = 0; b.avg = DB_MIN; b.peak = DB_MIN; });
+  state.clipCount = 0;
+}
+
+// Bewertung einer Kurve (live oder Aufnahme): Abgleich mit der Referenz, Resonanzen, zu laute/schwache Bereiche.
+// list: [{fc, fl, fh, avg}] – die Referenz wird an die Kurve angelegt, nur die Form zählt, nicht die Lautstärke.
+function assess(list) {
+  const res = { score: null, findings: [], devs: list.map(() => null), refFn: null };
+  const pts = list.filter((b) => b.fc >= SCORE_LO && b.fc <= SCORE_HI && b.avg > NOISE_FLOOR);
+  if (state.ref && pts.length >= 4) {
+    const off = pts.reduce((s, b) => s + b.avg - refLevelAt(state.ref, b.fc), 0) / pts.length;
+    const r = state.ref;
+    res.refFn = (f) => refLevelAt(r, f) + off;
+  }
+  const ref = res.refFn;
+  let sum = 0, cnt = 0;
+  list.forEach((b, i) => {
+    if (!ref || b.fc < GTR_LO || b.fc > GTR_HI || b.avg <= NOISE_FLOOR) return;
+    const d = b.avg - ref(b.fc);
+    res.devs[i] = d;
+    if (b.fc >= SCORE_LO && b.fc <= SCORE_HI) { sum += d * d; cnt++; }
+  });
+  res.score = cnt >= 4 ? Math.max(0, Math.min(100, Math.round(100 - 7 * Math.sqrt(sum / cnt)))) : null;
+
+  // Resonanzen: Band deutlich über seinen Nachbarn (± 1/2 Oktave)
+  const perOct = list.length > 1 ? Math.round(1 / Math.log2(list[1].fc / list[0].fc)) : 6;
+  const w = Math.max(1, Math.round(perOct / 2));
+  list.forEach((b, i) => {
+    if (b.fc < GTR_LO || b.fc > GTR_HI || b.avg < NOISE_FLOOR + 15) return;
+    const nb = [];
+    for (let j = i - w; j <= i + w; j++) if (j !== i && list[j]) nb.push(list[j].avg);
+    nb.sort((x, y) => x - y);
+    const med = nb[Math.floor(nb.length / 2)];
+    if (b.avg - med > 6 && nb.every((v) => v <= b.avg)) res.findings.push({ kind: 'res', f: b.fc, v: b.avg - med });
+  });
+  // Bereiche zu laut / zu schwach gegenüber der Referenz (zusammenhängende Bänder zusammenfassen)
+  if (ref) {
+    let run = null;
+    const flush = () => {
+      if (run && run.n >= Math.max(2, perOct / 3)) res.findings.push({ kind: run.kind, lo: run.lo, hi: run.hi, v: run.max });
+      run = null;
+    };
+    list.forEach((b, i) => {
+      const d = res.devs[i];
+      const kind = d == null ? null : d > state.tol ? 'hot' : d < -state.tol ? 'thin' : null;
+      if (!kind || (run && run.kind !== kind)) flush();
+      if (!kind) return;
+      if (!run) run = { kind, lo: b.fl, hi: b.fh, n: 0, max: 0 };
+      run.hi = b.fh; run.n++;
+      if (Math.abs(d) > Math.abs(run.max)) run.max = d;
+    });
+    flush();
+  }
+  return res;
+}
+
+/* ---------- Aufnahme: Vorlauf (Countdown oder „sobald ich spiele“), feste Dauer, Mittelwert + Audio ---------- */
+function recSettings() {
+  return { lead: $('recLead').value, dur: +$('recDur').value, beep: $('recBeep').checked };
+}
+
+function beep(freq, len) {
+  if (!state.ctx || !$('recBeep').checked) return;
+  const o = state.ctx.createOscillator(), g = state.ctx.createGain(), t = state.ctx.currentTime;
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.25, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g); g.connect(state.ctx.destination);  // nur Lautsprecher, nicht in die Analyse
+  o.start(t); o.stop(t + len + 0.02);
+}
+
+async function startRecording() {
+  if (state.rec) return;
+  if (!state.running) { await start(); if (!state.running) return; }
+  const s = recSettings(), now = performance.now();
+  state.rec = { dur: s.dur, phase: s.lead === 'auto' ? 'wait' : +s.lead > 0 ? 'lead' : 'pre', tGo: now + (+s.lead || 0) * 1000, lastSec: null };
+  if (state.rec.phase === 'pre') { beep(1320, 0.15); state.rec.tBegin = now + 250; }
+  updateRecUi();
+}
+
+function beginTake(now) {
+  const r = state.rec;
+  r.phase = 'rec'; r.t0 = now; r.elapsed = 0; r.clips = 0;
+  r.sums = new Float64Array(state.bands.length);
+  r.bands = state.bands.map((b) => ({ fc: b.fc, fl: b.fl, fh: b.fh }));
+  r.chunks = [];
+  if (state.recDest && window.MediaRecorder) {
+    try {
+      r.recorder = new MediaRecorder(state.recDest.stream);
+      r.recorder.ondataavailable = (e) => e.data.size && r.chunks.push(e.data);
+      r.recorder.start(500);
+    } catch (e) { r.recorder = null; }
+  }
+}
+
+function tickRecording(now, dt, clipEvent) {
+  const r = state.rec;
+  if (!r) return;
+  if (r.phase === 'lead') {
+    const left = Math.ceil((r.tGo - now) / 1000);
+    if (left !== r.lastSec && left <= 3 && left > 0) beep(880, 0.08);
+    r.lastSec = left;
+    if (now >= r.tGo) { beep(1320, 0.15); r.phase = 'pre'; r.tBegin = now + 250; }  // Startton klingt ab, bevor aufgenommen wird
+  } else if (r.phase === 'pre') {
+    if (now >= r.tBegin) beginTake(now);
+  } else if (r.phase === 'wait') {
+    if (20 * Math.log10(state.inRms || 1e-9) > AUTO_START_DB) beginTake(now);
+  } else if (r.phase === 'rec') {
+    if (r.bands.length !== state.bands.length) { cancelRecording(); return; }  // Auflösung während der Aufnahme geändert
+    state.bands.forEach((b, i) => (r.sums[i] += b.p * dt));
+    r.elapsed += dt;
+    if (clipEvent) r.clips++;
+    if (now - r.t0 >= r.dur * 1000) finishTake();
+  }
+}
+
+function finishTake() {
+  const r = state.rec;
+  state.rec = null;
+  const T = r.elapsed || 1;
+  const take = {
+    id: 't' + Date.now(), no: ++state.takeNo, time: new Date(), dur: Math.round(T), clips: r.clips,
+    bands: r.bands.map((b, i) => ({ ...b, avg: toDb(r.sums[i] / T) })),
+  };
+  take.name = 'Take ' + take.no;
+  take.result = assess(take.bands);
+  if (r.recorder) {
+    r.recorder.onstop = () => {
+      const blob = new Blob(r.chunks, { type: r.recorder.mimeType || 'audio/webm' });
+      take.url = URL.createObjectURL(blob); take.mime = blob.type;
+      renderTakes();
+    };
+    r.recorder.stop();
+  }
+  state.takes.unshift(take);
+  while (state.takes.length > MAX_TAKES) { const t = state.takes.pop(); if (t.url) URL.revokeObjectURL(t.url); }
+  setCompare(take);
+  beep(1320, 0.1); setTimeout(() => beep(1760, 0.15), 150);
+  updateRecUi(); renderTakes();
+}
+
+function cancelRecording() {
+  const r = state.rec;
+  if (!r) return;
+  state.rec = null;
+  if (r.recorder && r.recorder.state !== 'inactive') { r.recorder.ondataavailable = null; r.recorder.stop(); }
+  updateRecUi();
+}
+
+function updateRecUi() {
+  const on = !!state.rec;
+  $('recBtn').classList.toggle('on', on);
+  $('recBtn').innerHTML = on ? '<span class="dot sq"></span>Abbrechen' : '<span class="dot"></span>Aufnahme';
+  ['recLead', 'recDur', 'res'].forEach((id) => ($(id).disabled = on));
+  $('recOverlay').hidden = !on;
+}
+
+function drawRecOverlay(now) {
+  const r = state.rec;
+  if (!r) return;
+  let big = '', sub = '', prog = 0, cls = '';
+  if (r.phase === 'lead') { big = Math.max(1, Math.ceil((r.tGo - now) / 1000)); sub = 'Aufnahme beginnt gleich – Gitarre bereit'; cls = 'lead'; }
+  else if (r.phase === 'pre') { big = 'Los'; sub = ''; cls = 'lead'; }
+  else if (r.phase === 'wait') { big = '…'; sub = 'Aufnahme startet, sobald du spielst'; cls = 'wait'; }
+  else {
+    const el = (now - r.t0) / 1000;
+    big = '● ' + fmtSec(el); sub = 'von ' + fmtSec(r.dur) + (TOUCH ? ' · „Abbrechen“ stoppt' : ' · R oder Esc bricht ab'); prog = Math.min(1, el / r.dur); cls = 'rec';
+  }
+  $('recBig').textContent = big;
+  $('recSub').textContent = sub;
+  $('recProg').style.width = prog * 100 + '%';
+  $('recOverlay').className = 'rec-overlay ' + cls;
+}
+
+/* ---------- Aufnahmen-Liste ---------- */
+function renderTakes() {
+  const ul = $('takes');
+  if (!state.takes.length) {
+    ul.innerHTML = '<li class="empty">Noch keine Aufnahme. Bei „Aufnahme“ Vorlauf und Dauer wählen und starten' + (TOUCH ? '.' : ' – oder Taste R.') + '</li>';
+    return;
+  }
+  const lvl = (s) => (s == null ? '' : s >= 75 ? 'good' : s >= 50 ? 'mid' : 'bad');
+  ul.innerHTML = state.takes.map((t) => {
+    const sel = state.compare && state.compare.id === t.id;
+    const playing = state.playing === t.id;
+    return `<li class="take${sel ? ' sel' : ''}" data-id="${t.id}">
+      <div class="t-head"><b>${t.name}</b><span class="t-meta">${fmtTime(t.time)} · ${t.dur} s${t.clips ? ' · <span class="t-clip">' + t.clips + '× Clip</span>' : ''}</span>
+        <span class="badge ${lvl(t.result.score)}" title="Übereinstimmung mit der gewählten Referenz">${t.result.score == null ? '–' : t.result.score}</span>
+        <button data-act="del" class="t-del" title="Aufnahme löschen" aria-label="Aufnahme löschen">✕</button></div>
+      <div class="t-acts">
+        <button data-act="cmp" class="${sel ? 'on' : ''}" title="Kurve dieser Aufnahme als lila Vergleichslinie einblenden und unter „Bewertung“ auswerten">Vergleich</button>
+        <button data-act="play" ${t.url ? '' : 'disabled'} title="Aufnahme über die Lautsprecher abspielen">${playing ? 'Stopp' : 'Anhören'}</button>
+        <button data-act="ref" title="Kurve dieser Aufnahme als eigene Referenz speichern">Referenz</button>
+        <button data-act="dl" ${t.url ? '' : 'disabled'} title="Audio dieser Aufnahme als Datei speichern" aria-label="Audio speichern">↓</button>
+      </div></li>`;
+  }).join('');
+}
+
+function takeAction(id, act) {
+  const t = state.takes.find((x) => x.id === id);
+  if (!t) return;
+  const pl = $('takePlayer');
+  if (act === 'cmp') setCompare(state.compare && state.compare.id === id ? null : t);
+  if (act === 'play') {
+    if (state.playing === id) { pl.pause(); state.playing = null; }
+    else { pl.src = t.url; pl.play(); state.playing = id; pl.onended = () => { state.playing = null; renderTakes(); }; }
+  }
+  if (act === 'ref') saveAsRef(t.bands, t.name + ' (' + fmtTime(t.time) + ')');
+  if (act === 'dl') {
+    const ext = /ogg/.test(t.mime) ? 'ogg' : /mp4/.test(t.mime) ? 'm4a' : 'webm';
+    const a = document.createElement('a');
+    a.href = t.url;
+    a.download = `Equalizer_${t.name.replace(' ', '')}_${t.time.toISOString().slice(0, 16).replace(/[T:]/g, '-')}.${ext}`;
+    a.click();
+  }
+  if (act === 'del') {
+    if (!confirm(`${t.name} löschen?`)) return;
+    if (state.playing === id) { pl.pause(); state.playing = null; }
+    if (t.url) URL.revokeObjectURL(t.url);
+    state.takes = state.takes.filter((x) => x !== t);
+    if (state.compare && state.compare.id === id) setCompare(null);
+  }
+  renderTakes();
+}
+
+function setCompare(c) {
+  state.compare = c;
+  const isTake = !!(c && c.result);
+  $('viewTake').disabled = !isTake;
+  $('viewTake').textContent = isTake ? c.name : 'Aufnahme';
+  state.view = isTake ? 'take' : 'live';
+  $('clearSnap').disabled = !c;
+  updateViewButtons();
+  renderTakes();
+}
+
+function updateViewButtons() {
+  lastUi = 0;  // Bewertung sofort neu zeigen
+  $('viewLive').classList.toggle('on', state.view === 'live');
+  $('viewTake').classList.toggle('on', state.view === 'take');
+  updateUi(performance.now());
+}
+
+function reassessTakes() {
+  state.takes.forEach((t) => (t.result = assess(t.bands)));
+  renderTakes();
+}
+
+/* ---------- Zeichnen ---------- */
+const cv = $('chart'), g = cv.getContext('2d');
+let W = 0, H = 0, css = {};
+const PAD = { l: 44, r: 12, t: 26, b: 34 };
+
+function resize() {
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * d); cv.height = Math.round(H * d);
+  g.setTransform(d, 0, 0, d, 0, 0);
+  const s = getComputedStyle(document.documentElement);
+  ['--bg2', '--grid', '--text', '--muted', '--ok', '--warn', '--hot', '--thin', '--accent', '--zone', '--snap']
+    .forEach((k) => (css[k] = s.getPropertyValue(k).trim()));
+}
+const xOf = (f) => PAD.l + (Math.log(f / F_MIN) / Math.log(F_MAX / F_MIN)) * (W - PAD.l - PAD.r);
+const yOf = (db) => PAD.t + (1 - (Math.max(DB_MIN, Math.min(DB_MAX, db)) - DB_MIN) / (DB_MAX - DB_MIN)) * (H - PAD.t - PAD.b);
+
+function label(t, x, y) {
+  g.save(); g.strokeStyle = css['--bg2']; g.lineWidth = 4; g.lineJoin = 'round';
+  g.strokeText(t, x, y); g.restore(); g.fillText(t, x, y);
+}
+
+function fitText(t, room) {
+  while (t.length > 1 && g.measureText(t).width > room) t = t.slice(0, -2) + '…';
+  return room > 40 ? t : '';
+}
+
+function draw() {
+  const pb = H - PAD.b, pt = PAD.t;
+  g.clearRect(0, 0, W, H);
+  g.font = '11px system-ui, sans-serif';
+
+  // Bereiche außerhalb der Gitarre abdunkeln, Zonen beschriften
+  g.fillStyle = css['--zone'];
+  g.fillRect(PAD.l, pt, xOf(GTR_LO) - PAD.l, pb - pt);
+  g.fillRect(xOf(GTR_HI), pt, W - PAD.r - xOf(GTR_HI), pb - pt);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  ZONES.forEach((z, i) => {
+    const x0 = xOf(z.lo), x1 = xOf(Math.min(z.hi, F_MAX));
+    g.fillStyle = css['--muted'];
+    if (x1 - x0 > g.measureText(z.name).width + 6) g.fillText(z.name, (x0 + x1) / 2, pt - 13);
+    if (i) { g.strokeStyle = css['--grid']; g.setLineDash([2, 4]); g.beginPath(); g.moveTo(x0, pt - 20); g.lineTo(x0, pb); g.stroke(); g.setLineDash([]); }
+  });
+
+  // Raster
+  g.strokeStyle = css['--grid']; g.lineWidth = 1;
+  g.textAlign = 'right';
+  for (let db = DB_MIN + 10; db <= DB_MAX; db += 10) {
+    const y = Math.round(yOf(db)) + 0.5;
+    g.beginPath(); g.moveTo(PAD.l, y); g.lineTo(W - PAD.r, y); g.stroke();
+    g.fillStyle = css['--muted']; g.fillText(db, PAD.l - 6, y);
+  }
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  [50, 100, 200, 500, 1000, 2000, 5000, 10000].forEach((f) => {
+    const x = Math.round(xOf(f)) + 0.5;
+    g.beginPath(); g.moveTo(x, pt); g.lineTo(x, pb); g.stroke();
+    if (W > 420 || [100, 1000, 10000].includes(f)) g.fillText(fmtHz(f), x, pb + 6);
+  });
+  g.textAlign = 'left'; g.fillStyle = css['--muted']; g.fillText('dB', 4, pt - 18);
+
+  // Balken
+  const bands = state.bands;
+  const yT = yOf(state.threshold);
+  bands.forEach((b) => {
+    const x0 = xOf(b.fl) + 1, x1 = xOf(b.fh) - 1, w = Math.max(1, x1 - x0);
+    const y = yOf(b.cur);
+    g.globalAlpha = b.fc >= GTR_LO && b.fc <= GTR_HI ? 1 : 0.4;
+    g.fillStyle = css['--ok'];
+    g.fillRect(x0, Math.max(y, yT), w, pb - Math.max(y, yT));
+    if (y < yT) { g.fillStyle = css['--hot']; g.fillRect(x0, y, w, yT - y); }
+    g.fillStyle = b.peak > state.threshold ? css['--hot'] : css['--text'];
+    g.fillRect(x0, yOf(b.peak) - 1, w, 2);
+    g.globalAlpha = 1;
+  });
+
+  // Warnschwelle
+  const yTl = Math.round(yT) + 0.5;
+  g.strokeStyle = css['--hot']; g.setLineDash([6, 4]); g.globalAlpha = 0.7;
+  g.beginPath(); g.moveTo(PAD.l, yTl); g.lineTo(W - PAD.r, yTl); g.stroke();
+  g.setLineDash([]); g.globalAlpha = 1;
+  g.fillStyle = css['--hot']; g.textAlign = 'right'; g.textBaseline = 'bottom';
+  g.fillText('Warnschwelle', W - PAD.r - 2, yTl - 2);
+
+  // Vergleichskurve (lila), Langzeitkurve (weiß), Referenz (orange, mit Toleranzband)
+  const line = (fn, color, width, dash) => {
+    g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dash || []);
+    g.beginPath(); let first = true;
+    for (let f = GTR_LO * 0.8; f <= Math.min(F_MAX, GTR_HI * 2); f *= 1.02) {
+      const v = fn(f); if (v == null) { first = true; continue; }
+      const x = xOf(f), y = yOf(v);
+      first ? g.moveTo(x, y) : g.lineTo(x, y); first = false;
+    }
+    g.stroke(); g.setLineDash([]); g.lineWidth = 1;
+  };
+  const avgAt = (arr) => (f) => {
+    const b = arr.find((b) => f >= b.fl && f < b.fh);
+    return b && b.avg > NOISE_FLOOR ? b.avg : null;
+  };
+  if (state.compare) {
+    const fn = avgAt(state.compare.bands);
+    line(fn, css['--snap'], 2, [5, 4]);
+    let f0 = GTR_LO * 0.8;
+    while (f0 < GTR_HI && fn(f0) == null) f0 *= 1.02;
+    if (fn(f0) != null) {
+      g.fillStyle = css['--snap']; g.textAlign = 'left'; g.textBaseline = 'bottom';
+      label(fitText(state.compare.name, xOf(GTR_HI) - xOf(f0)), xOf(f0) + 2, yOf(fn(f0)) - 6);
+    }
+  }
+  if (state.running || state.frozen) line(avgAt(bands), css['--text'], 1.5);
+  const view = currentView();
+  const ref = view.refFn;
+  if (ref) {
+    g.fillStyle = css['--accent']; g.globalAlpha = 0.12; g.beginPath();
+    for (let f = GTR_LO; f <= GTR_HI; f *= 1.02) g.lineTo(xOf(f), yOf(ref(f) + state.tol));
+    for (let f = GTR_HI; f >= GTR_LO; f /= 1.02) g.lineTo(xOf(f), yOf(ref(f) - state.tol));
+    g.fill(); g.globalAlpha = 1;
+    line(ref, css['--accent'], 2.5);
+    g.fillStyle = css['--accent']; g.textAlign = 'left'; g.textBaseline = 'bottom';
+    const lx = xOf(GTR_HI) + 4;
+    label(fitText(state.ref.name, W - PAD.r - lx - 4), lx, yOf(ref(GTR_HI)) - 4);
+  }
+
+  // Abweichungsleiste unter dem Diagramm (zur gewählten Bewertung: live oder Aufnahme)
+  const sy = pb + 22;
+  view.list.forEach((b, i) => {
+    const d = view.devs[i];
+    if (d == null) return;
+    g.fillStyle = d > state.tol ? css['--hot'] : d < -state.tol ? css['--thin'] : css['--ok'];
+    g.globalAlpha = Math.min(1, 0.35 + Math.abs(d) / 12);
+    g.fillRect(xOf(b.fl) + 1, sy, Math.max(1, xOf(b.fh) - xOf(b.fl) - 2), 6);
+  });
+  g.globalAlpha = 1;
+}
+
+// Was unter „Bewertung“ gezeigt wird: die Live-Kurve oder die als Vergleich gewählte Aufnahme
+function currentView() {
+  const t = state.view === 'take' && state.compare && state.compare.result ? state.compare : null;
+  return t ? { take: t, list: t.bands, ...t.result } : { take: null, list: state.bands, ...state.live };
+}
+
+/* ---------- Seitenleiste ---------- */
+let lastUi = 0;
+function updateUi(now) {
+  const db = (v) => (v > 0 ? 20 * Math.log10(v) : -Infinity);
+  const pk = db(state.inPeak || 0), rm = db(state.inRms || 0);
+  const pct = (v) => Math.max(0, Math.min(100, ((v + 60) / 60) * 100)) + '%';
+  $('meterPeak').style.width = pct(pk);
+  $('meterRms').style.width = pct(rm);
+  $('peakVal').textContent = isFinite(pk) ? pk.toFixed(1).replace('.', ',') + ' dBFS' : '–';
+  const clip = now < state.clipUntil;
+  $('clipLed').classList.toggle('on', clip);
+  $('clipInfo').textContent = state.clipCount ? state.clipCount + '× übersteuert' : 'kein Clipping';
+  if (now - lastUi < 250) return;
+  lastUi = now;
+  const v = currentView();
+  $('score').textContent = v.score == null ? '–' : v.score;
+  $('scoreBox').dataset.level = v.score == null ? '' : v.score >= 75 ? 'good' : v.score >= 50 ? 'mid' : 'bad';
+  $('scoreSub').textContent = !state.ref ? 'keine Referenz gewählt' : v.take ? 'Übereinstimmung · ' + v.take.name : 'Übereinstimmung · live';
+  const items = [];
+  if (v.take ? v.take.clips : clip || state.clipCount) items.push(['clip', 'Eingang übersteuert – Mikrofon-/Interface-Gain senken']);
+  v.findings.slice().sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 6).forEach((f) => {
+    if (f.kind === 'res') items.push(['res', `Resonanz bei ${fmtHz(f.f)} (+${f.v.toFixed(0)} dB)`]);
+    if (f.kind === 'hot') items.push(['hot', `${fmtHz(f.lo)}–${fmtHz(f.hi)} zu laut (+${f.v.toFixed(0)} dB)`]);
+    if (f.kind === 'thin') items.push(['thin', `${fmtHz(f.lo)}–${fmtHz(f.hi)} zu schwach (${f.v.toFixed(0)} dB)`]);
+  });
+  if (!v.take) {
+    const hotNow = state.bands.filter((b) => now - b.over < 300).map((b) => b.fc);
+    if (hotNow.length) items.push(['hot', `Über Warnschwelle: ${fmtHz(hotNow[0])}${hotNow.length > 1 ? '–' + fmtHz(hotNow[hotNow.length - 1]) : ''}`]);
+  }
+  const html = items.length ? items.map(([k, t]) => `<li class="${k}">${t}</li>`).join('')
+    : `<li class="none">${v.take || state.running ? 'Keine Auffälligkeiten' : 'Noch kein Signal'}</li>`;
+  const ul = $('findings');
+  if (ul.innerHTML !== html) ul.innerHTML = html;
+}
+
+function setOverlay(t) { $('overlay').textContent = t; $('overlay').hidden = !t; }
+
+/* ---------- Referenzen ---------- */
+function loadCustom() {
+  try { state.custom = JSON.parse(localStorage.getItem('eq-custom-refs') || '[]'); } catch (e) { state.custom = []; }
+}
+function saveCustom() {
+  try { localStorage.setItem('eq-custom-refs', JSON.stringify(state.custom)); } catch (e) {}
+}
+function allRefs() { return REFERENCES.concat(state.custom); }
+
+function fillRefSelect(keep) {
+  const sel = $('refSel');
+  sel.innerHTML = '<option value="">– keine –</option>';
+  const groups = {};
+  allRefs().forEach((r) => (groups[r.group] = groups[r.group] || []).push(r));
+  Object.entries(groups).forEach(([gname, refs]) => {
+    const og = document.createElement('optgroup'); og.label = gname;
+    refs.forEach((r) => { const o = document.createElement('option'); o.value = r.id; o.textContent = r.name; og.appendChild(o); });
+    sel.appendChild(og);
+  });
+  sel.value = keep || '';
+  selectRef();
+}
+
+function selectRef() {
+  const id = $('refSel').value;
+  state.ref = allRefs().find((r) => r.id === id) || null;
+  $('refDesc').textContent = state.ref ? state.ref.desc : 'Wähle ein Genre oder einen Gitarristen als Orientierung.';
+  $('delRef').disabled = !(state.ref && state.ref.group === 'Eigene');
+  state.live = assess(state.bands);
+  reassessTakes();
+}
+
+function saveAsRef(list, defName) {
+  const pts = list.filter((b) => b.fc >= GTR_LO && b.fc <= GTR_HI && b.avg > NOISE_FLOOR);
+  if (pts.length < 6) { alert('Zu wenig Signal – erst etwas abspielen oder spielen.'); return; }
+  const name = prompt('Name der Referenz (z. B. Songtitel):', defName || 'Meine Referenz');
+  if (!name) return;
+  // über 1/3 Oktave glätten, damit einzelne Töne die Kurve nicht prägen
+  const perOct = Math.round(1 / Math.log2(pts[1].fc / pts[0].fc));
+  const w = Math.max(1, Math.round(perOct / 3));
+  const sm = pts.map((b, i) => {
+    const seg = pts.slice(Math.max(0, i - w), i + w + 1);
+    return seg.reduce((s, x) => s + x.avg, 0) / seg.length;
+  });
+  const mean = sm.reduce((s, v) => s + v, 0) / sm.length;
+  const ref = { id: 'c-' + Date.now(), group: 'Eigene', name, desc: 'Eigene Messung vom ' + new Date().toLocaleDateString('de-DE') + '.',
+    freqs: pts.map((b) => +b.fc.toFixed(1)), db: sm.map((v) => +(v - mean).toFixed(1)) };
+  state.custom.push(ref); saveCustom(); fillRefSelect(ref.id);
+}
+
+/* ---------- Verdrahtung ---------- */
+function loop(now) {
+  draw();
+  drawRecOverlay(now);
+  updateUi(now);
+  requestAnimationFrame(loop);
+}
+
+function flash(btn, text) {
+  const old = btn.dataset.label || btn.textContent;
+  btn.dataset.label = old;
+  btn.textContent = text; btn.classList.add('ok');
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => { btn.textContent = old; btn.classList.remove('ok'); }, 1200);
+}
+
+// Touch: langes Drücken auf ein Element zeigt seine Erklärung (title) statt sie per Mouseover
+function setupTouchTips() {
+  const tip = $('tip');
+  let timer = null, x0 = 0, y0 = 0, swallow = false, hideT = null;
+  const hide = () => { tip.hidden = true; };
+  const show = (text) => {
+    tip.textContent = text; tip.hidden = false;
+    clearTimeout(hideT); hideT = setTimeout(hide, 5000);
+  };
+  document.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    if (!tip.hidden && !e.target.closest('[title]')) hide();
+    const el = e.target.closest('[title]');
+    if (!el || !el.title) return;
+    x0 = e.clientX; y0 = e.clientY; swallow = false;
+    clearTimeout(timer);
+    timer = setTimeout(() => { swallow = true; show(el.title); }, 500);
+  }, true);
+  document.addEventListener('pointermove', (e) => {
+    if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) { clearTimeout(timer); timer = null; }
+  }, true);
+  ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, () => { clearTimeout(timer); timer = null; }, true));
+  // Der Tipp ersetzt den Klick: langes Drücken löst die Funktion nicht aus
+  document.addEventListener('click', (e) => {
+    if (swallow) { swallow = false; e.preventDefault(); e.stopPropagation(); }
+  }, true);
+  document.addEventListener('contextmenu', (e) => { if (e.target.closest('[title]')) e.preventDefault(); }, true);
+  tip.addEventListener('click', hide);
+}
+
+function loadRecSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('eq-rec') || '{}');
+    if (s.lead != null && [...$('recLead').options].some((o) => o.value === s.lead)) $('recLead').value = s.lead;
+    if (s.dur != null && [...$('recDur').options].some((o) => o.value === String(s.dur))) $('recDur').value = String(s.dur);
+    if (s.beep != null) $('recBeep').checked = s.beep;
+  } catch (e) {}
+}
+function saveRecSettings() {
+  try { localStorage.setItem('eq-rec', JSON.stringify(recSettings())); } catch (e) {}
+}
+
+function init() {
+  loadCustom();
+  buildBands();
+  fillRefSelect('g-classic');
+  listDevices();
+  loadRecSettings();
+  renderTakes();
+  setCompare(null);
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener)
+    navigator.mediaDevices.addEventListener('devicechange', () => listDevices());
+
+  $('startBtn').onclick = () => (state.running ? stop() : start());
+  $('source').onchange = () => {
+    $('monitor').checked = $('source').value === 'demo' || $('source').value === 'file';
+    $('fileRow').hidden = $('source').value !== 'file';
+    if (state.running || $('source').value === 'file') start();
+  };
+  $('monitor').onchange = applyMonitor;
+  $('fileInput').onchange = (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const p = $('player'); p.src = URL.createObjectURL(f);
+    $('fileName').textContent = f.name;
+    $('source').value = 'file'; $('fileRow').hidden = false; $('monitor').checked = true;
+    start();
+  };
+  $('pickFile').onclick = () => $('fileInput').click();
+  $('refSel').onchange = selectRef;
+  $('tol').oninput = (e) => {
+    state.tol = +e.target.value; $('tolVal').textContent = '± ' + state.tol + ' dB';
+    state.live = assess(state.bands); reassessTakes();
+  };
+  $('thr').oninput = (e) => { state.threshold = +e.target.value; $('thrVal').textContent = state.threshold + ' dB'; };
+  $('res').onchange = (e) => { state.fraction = +e.target.value; buildBands(); };
+  $('freeze').onclick = () => {
+    state.frozen = !state.frozen;
+    $('freeze').classList.toggle('on', state.frozen);
+    $('freeze').textContent = state.frozen ? 'Weiter' : 'Einfrieren';
+  };
+  $('snap').onclick = () => {
+    if (!state.bands.some((b) => b.avg > NOISE_FLOOR)) { flash($('snap'), 'Kein Signal'); return; }
+    setCompare({ id: 'snap', name: 'Gemerkt ' + fmtTime(new Date()), bands: state.bands.map((b) => ({ fc: b.fc, fl: b.fl, fh: b.fh, avg: b.avg })) });
+    flash($('snap'), 'Gemerkt ✓');
+  };
+  $('clearSnap').onclick = () => setCompare(null);
+  $('resetAvg').onclick = () => { resetAverage(); flash($('resetAvg'), 'Zurückgesetzt ✓'); };
+  $('saveRef').onclick = () => saveAsRef(state.bands);
+  $('delRef').onclick = () => {
+    if (!state.ref || !confirm(`Referenz „${state.ref.name}“ löschen?`)) return;
+    state.custom = state.custom.filter((r) => r.id !== state.ref.id); saveCustom(); fillRefSelect('');
+  };
+  $('viewLive').onclick = () => { state.view = 'live'; updateViewButtons(); };
+  $('viewTake').onclick = () => { state.view = 'take'; updateViewButtons(); };
+  $('recBtn').onclick = () => (state.rec ? cancelRecording() : startRecording());
+  ['recLead', 'recDur', 'recBeep'].forEach((id) => ($(id).onchange = saveRecSettings));
+  $('takes').onclick = (e) => {
+    const b = e.target.closest('button[data-act]'), li = e.target.closest('li[data-id]');
+    if (b && li) takeAction(li.dataset.id, b.dataset.act);
+  };
+  // Freihändig: Taste R startet/bricht ab (auch ein Bluetooth-Fußpedal, das auf R gelegt ist), Esc bricht ab
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA)$/.test(e.target.tagName) && e.target.type !== 'range' && e.target.type !== 'checkbox') return;
+    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); state.rec ? cancelRecording() : startRecording(); }
+    else if (e.key === 'Escape' && state.rec) { e.preventDefault(); cancelRecording(); }
+  }, true);
+  setupTouchTips();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.running) keepAwake(true);
+  });
+  new ResizeObserver(resize).observe(cv);
+  resize();
+  setOverlay(window.isSecureContext ? 'Quelle wählen und Start drücken' : 'Mikrofon geht nur über https:// oder localhost – Demo und Datei funktionieren trotzdem.');
+  setInterval(analyse, 40);
+  requestAnimationFrame(loop);
+}
+
+// für Tests
+window.__eq = state;
+init();
+</script>
+</body>
+</html>
